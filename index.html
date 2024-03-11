@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Socket.io Video Streaming</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/simple-peer@10.0.10/simplepeer.min.js"></script>
+</head>
+<body>
+
+  <h1>Socket.io Video Streaming</h1>
+
+  <button onclick="selectUser('telmi')">Select telmiii</button>
+  <button onclick="selectUser('watch')">Select watch</button>
+
+  <script>
+    const socket = io('http://localhost:12000');
+    let peer;
+
+    function selectUser(userType) {
+      socket.emit('userSelection', userType);
+
+      if (userType === 'telmi') {
+        // For telmi users, initiate video streaming
+        const video = document.createElement('video');
+        document.body.appendChild(video);
+
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+          .then((stream) => {
+            video.srcObject = stream;
+            video.play();
+
+            peer = new SimplePeer({ initiator: true, trickle: false, stream });
+
+            peer.on('signal', (data) => {
+              socket.emit('signal', {
+                to: 'telmiRoom',
+                signal: data,
+              });
+            });
+
+            socket.on('signal', (data) => {
+              peer.signal(data.signal);
+            });
+          })
+          .catch((error) => {
+            console.error('Error accessing camera and microphone:', error);
+          });
+      } else if (userType === 'watch') {
+        // For watch users, receive telmi users list
+        socket.on('telmiUsers', (telmiUsers) => {
+          console.log('Telmi users:', telmiUsers);
+          // Connect to telmi users
+          telmiUsers.forEach((telmiUserId) => {
+            const video = document.createElement('video');
+            document.body.appendChild(video);
+
+            const watchPeer = new SimplePeer({ initiator: false, trickle: false });
+
+            watchPeer.on('signal', (data) => {
+              socket.emit('signal', {
+                to: telmiUserId,
+                signal: data,
+              });
+            });
+
+            socket.on('signal', (data) => {
+              if (data.from === telmiUserId) {
+                watchPeer.signal(data.signal);
+              }
+            });
+
+            socket.on('userLeft', (leftUserId) => {
+              if (leftUserId === telmiUserId) {
+                console.log('Telmi user left:', telmiUserId);
+                video.remove();
+              }
+            });
+          });
+        });
+      }
+    }
+  </script>
+</body>
+</html>
