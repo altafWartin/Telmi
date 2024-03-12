@@ -67,18 +67,6 @@ app.use("/api", chatRoutes);
 
 // server.js
 
-app.use(cors({
-  origin: 'http://localhost:3001'
-}));
-
-
-
-let users = {};
-let viewerCount = 0;
-// Now attach event listeners to socketServer
-
-
-
 
 app.use(cors({
   origin: 'http://localhost:3001'
@@ -90,18 +78,73 @@ const io = socketIO(server, {
     methods: ["GET", "POST"]
   }
 });
-io.on('connection', (socket) => {
-  console.log('a user connected');
 
-  socket.on('stream', (stream) => {
-    socket.broadcast.emit('stream', stream);
-    console.log('stream', stream);
-  });
+
+
+
+
+const httpServer = new http.Server(app);
+
+// app.get('/', (req, res) =>{
+//   res.render('index');
+// });
+let viewerCount = 0;
+
+// type Message = { text: string, date: Date };
+
+// const messageList: Message[] = [];
+
+// function purgeLastHundred() {
+//   if (messageList.length > 200) {
+//     messageList.slice(100);
+//   }
+// }
+
+// setInterval(purgeLastHundred, 10000);
+
+io.on('connection', (socket) => {
+  viewerCount++;
+  console.log('a user connected. Total viewer count:', viewerCount);
+  socket.emit('viewer-count', viewerCount);
 
   socket.on('disconnect', () => {
-    console.log('user disconnected');
+    viewerCount--;
+    console.log('A user disconnected. Total viewer count:', viewerCount);
+    socket.emit('viewer-count', viewerCount);
   });
+
+  socket.on('join-as-streamer', (streamerId) => {
+    socket.broadcast.emit('streamer-joined', streamerId);
+    console.log("streamer",socket.id)
+
+
+  });
+
+  socket.on('disconnect-as-streamer', (streamerId) => {
+    socket.broadcast.emit('streamer-disconnected', streamerId);
+
+  });
+
+  socket.on('join-as-viewer', (viewerId) => {
+    socket.broadcast.emit('viewer-connected', viewerId);
+    console.log("viewer ",socket.id)
+
+    // socket.emit('backfill-messages', messageList);
+  });
+
+  // socket.on('add-message-to-live-chat', (messageText: string) => {
+  //   const message: Message = {
+  //     text: messageText,
+  //     date: new Date(),
+  //   };
+
+  //   messageList.push(message);
+  //   socket.emit('new-message', message);
+  //   socket.broadcast.emit('new-message', message);
+  // });
 });
+
+
 
 
 
@@ -112,90 +155,6 @@ server.listen(port, () => {
 });
 
 
-let firstUserSocketId;
-
-// io.on('connection', (socket) => {
-//   // Set the socket ID for the first user
-//   if (!firstUserSocketId) {
-//     firstUserSocketId = socket.id;
-//   }
-//   console.log('A user connected', socket.id, firstUserSocketId);
-
-//   // Handle WebRTC signaling events only for the first user
-//   if (socket.id === firstUserSocketId) {
-//     socket.on('offer', (data) => {
-//       socket.broadcast.emit('offer', data);
-//     });
-
-//   }
-//     socket.on('answer', (data) => {
-//       socket.broadcast.emit('answer', data);
-//     });
-
-//     socket.on('ice-candidate', (data) => {
-//       socket.broadcast.emit('ice-candidate', data);
-//     });
-// });
-
-
-// io.on('connection', (socket) => {
-//   console.log('A user connected');
-
-//   socket.on('join-as-streamer', (streamerId) => {
-//     socket.broadcast.emit('streamer-joined', streamerId); 
-//     console.log('streamer joined', streamerId)
-//   });
-
-//   socket.on('disconnect-as-streamer', (streamerId) => {
-//     socket.broadcast.emit('streamer-disconnected', streamerId);
-//   });
-
-//   socket.on('join-as-viewer', (viewerId) => {
-//     socket.broadcast.emit('viewer-connected', viewerId);
-//     console.log('viewerId joined', viewerId)
-
-//   });
-
-//   socket.on('disconnect', () => {
-//     console.log('A user disconnected');
-//   });
-// });
-
-
-// io.on('connection', (socket) => {
-//  console.log('A user connected',socket.id);
-
-//  socket.on('userSelection', (userType) => {
-//     console.log(`User selected: ${userType}`);
-//     users[socket.id] = userType;
-
-//     if (userType === 'telmi') {
-//       socket.emit('startVideoCall');
-//     } else if (userType === 'watch') {
-//       socket.emit('displayVideo');
-//     }
-//  });
-
-//  socket.on('offer', (data) => {
-//     console.log('Offer received');
-//     socket.to(data.to).emit('offer', data);
-//  });
-
-//  socket.on('answer', (data) => {
-//     console.log('Answer received');
-//     socket.to(data.to).emit('answer', data);
-//  });
-
-//  socket.on('iceCandidate', (data) => {
-//     console.log('ICE candidate received');
-//     socket.to(data.to).emit('iceCandidate', data);
-//  });
-
-//  socket.on('disconnect', () => {
-//     console.log('User disconnected');
-//     delete users[socket.id];
-//  });
-// });
 
 app.get("/", async (req, res, next) => {
   res

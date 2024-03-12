@@ -330,13 +330,6 @@ exports.updateRequestStatus = async (req, res) => {
 
 const AWS = require("aws-sdk");
 
-AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEYS,
-  secretAccessKey: process.env.AWS_SECRET_KEYS,
-  region: process.env.AWS_BUCKET_REGION,
-});
-
-
 const s3 = new AWS.S3({
   accessKeyId: process.env.AWS_ACCESS_KEYS,
   secretAccessKey: process.env.AWS_SECRET_KEYS,
@@ -707,13 +700,7 @@ exports.updateUserFields = async (req, res) => {
     } = req.body;
     console.log("1");
     // Access uploaded files
-    const profilePhotoFile = req.files.profilePhoto
-      ? req.files.profilePhoto[0]
-      : null;
-    const coverPhotoFile = req.files.coverPhoto
-      ? req.files.coverPhoto[0]
-      : null;
-    console.log("2");
+   
 
     console.log(
       _id,
@@ -726,8 +713,6 @@ exports.updateUserFields = async (req, res) => {
       company,
       college,
       about,
-      profilePhotoFile,
-      coverPhotoFile
     );
     // Update fields
     const update = {
@@ -744,60 +729,6 @@ exports.updateUserFields = async (req, res) => {
     };
     console.log("3");
 
-    // Check if profilePhoto and coverPhoto files are uploaded
-    if (profilePhotoFile) {
-      // Upload profilePhoto to S3 and update the user document
-      console.log("Uploading profile");
-      const profilePhotoParams = {
-        Bucket: process.env.AWS_BUCKET_NAME,
-        Key: `profileImages/${_id}_${Date.now()}_profilePhoto_${
-          profilePhotoFile.originalname
-        }`,
-        Body: profilePhotoFile.buffer,
-      };
-
-      try {
-        const profilePhotoUploadResult = await s3
-          .upload(profilePhotoParams)
-          .promise();
-        update.profilePhoto = profilePhotoUploadResult.Location;
-      } catch (profilePhotoUploadError) {
-        console.error(
-          "Error uploading profile photo to AWS S3:",
-          profilePhotoUploadError
-        );
-        return res
-          .status(500)
-          .json({ error: "Error uploading profile photo to AWS S3" });
-      }
-    }
-
-    if (coverPhotoFile) {
-      // Upload coverPhoto to S3 and update the user document
-      console.log("Uploading cover");
-      const coverPhotoParams = {
-        Bucket: process.env.AWS_BUCKET_NAME,
-        Key: `profileImages/${_id}_${Date.now()}_coverPhoto_${
-          coverPhotoFile.originalname
-        }`,
-        Body: coverPhotoFile.buffer,
-      };
-
-      try {
-        const coverPhotoUploadResult = await s3
-          .upload(coverPhotoParams)
-          .promise();
-        update.coverPhoto = coverPhotoUploadResult.Location;
-      } catch (coverPhotoUploadError) {
-        console.error(
-          "Error uploading cover photo to AWS S3:",
-          coverPhotoUploadError
-        );
-        return res
-          .status(500)
-          .json({ error: "Error uploading cover photo to AWS S3" });
-      }
-    }
     console.log("4");
 
     const filter = { _id: _id };
@@ -806,7 +737,7 @@ exports.updateUserFields = async (req, res) => {
     // Update user in the database
     const user = await User.findOneAndUpdate(filter, update, { new: true });
     console.log("6");
-
+console.log(user)
 
    return res.json({ success: true, message: 'User updated successfully', data: user });
     console.log(user);
@@ -888,45 +819,3 @@ exports.updateUserFields = async (req, res) => {
 //     return res.status(500).json({ error: "Internal Server Error" });
 //   }
 // };
-
-// exports.updateUserFields = async (req, res) => {
-//   const { _id, name, dob, gender, location, job, company, college, about } =
-//     req.body;
-
-//   // Update fields
-//   const update = {
-//     name,
-//     dob,
-//     gender,
-//     location,
-//     job,
-//     company,
-//     college,
-//     about,
-//     // Add a field to store the photo key in the user document
-//   };
-
-//   const filter = { _id: _id };
-
-//   try {
-//     // Update user in the database
-//     const user = await User.findOneAndUpdate(filter, update, { new: true });
-
-//     return res.json({ user });
-//   } catch (error) {
-//     // Handle error appropriately
-//     console.error(error);
-//     return res.status(500).json({ error: "Internal Server Error" });
-//   }
-// };
-
-// function getAge(DOB) {
-//   var today = new Date();
-//   var birthDate = new Date(DOB);
-//   var age = today.getFullYear() - birthDate.getFullYear();
-//   var m = today.getMonth() - birthDate.getMonth();
-//   if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-//     age = age - 1;
-//   }
-//   return age;
-// }

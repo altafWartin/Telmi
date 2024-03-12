@@ -36,7 +36,7 @@ router.post("/addComment", AddComment);
 router.post("/getComment", GetComment);
 router.post("/notifications", GetNotifications);
 router.post("/uploadImage", upload.single("photo"), uploadImage);
-router.post('/updateUserFields', upload.fields([{ name: 'profilePhoto', maxCount: 1 }, { name: 'coverPhoto', maxCount: 1 }]), updateUserFields);
+router.post('/updateUserFields', updateUserFields);
 
 router.post("/profileUpload", upload.single("photo"), profileUpload);
 // router.post("/updateUserFields", updateUserFields);
